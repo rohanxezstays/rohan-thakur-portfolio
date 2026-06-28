@@ -29,7 +29,8 @@ const EXHIBITS = [
 ] as const;
 
 const GAP = 600; // px between frame centres
-const START = 520; // px to first frame
+const ENTRY = 150; // avatar's starting spot, in the entrance before Canvas I
+const START = 560; // px to first frame
 const END_PAD = 520;
 const WORLD_W = START + (EXHIBITS.length - 1) * GAP + END_PAD;
 const SPEED = 6; // walk px per frame
@@ -46,16 +47,16 @@ export default function WalkGallery() {
   const charRef = useRef<HTMLDivElement>(null);
   const artRef = useRef<HTMLDivElement>(null);
 
-  const charX = useRef(START); // start at first frame
+  const charX = useRef(ENTRY); // start in the entrance, before Canvas I
   const dir = useRef(0); // -1 / 0 / 1
   const facing = useRef(1);
   const camX = useRef(0); // smoothed camera position
-  const prevX = useRef(START);
+  const prevX = useRef(ENTRY);
   const stride = useRef(0); // distance since last footprint
   const side = useRef(1);
   const printId = useRef(0);
 
-  const [active, setActive] = useState<number | null>(0);
+  const [active, setActive] = useState<number | null>(null);
   const [open, setOpen] = useState<number | null>(null);
   const [prints, setPrints] = useState<{ id: number; x: number; s: number }[]>([]);
   const [greet, setGreet] = useState(true);
@@ -261,21 +262,13 @@ export default function WalkGallery() {
           {/* greeting + guide bubble */}
           {greet && (
             <div className="absolute bottom-[116px] left-0 z-40 w-52 -translate-x-1/2 sm:w-64">
-              <div className="relative rounded-2xl bg-[#2a241d] px-4 py-3 text-center shadow-[0_18px_40px_-16px_rgba(28,24,19,0.7)]">
-                <p className="font-serif text-sm text-[#f6f1e7] sm:text-base">
+              <div className="relative rounded-2xl bg-[#2a241d] px-5 py-4 text-center shadow-[0_18px_40px_-16px_rgba(28,24,19,0.7)]">
+                <p className="font-serif text-base text-[#f6f1e7] sm:text-lg">
                   Welcome — I&apos;m your guide.
-                </p>
-                <p className="mt-1 text-[11px] leading-snug text-[#f6f1e7]/75">
-                  <span className="hidden sm:inline">
-                    Walk me with ← → (or A · D). Reach a frame and press ↑ to view it.
-                  </span>
-                  <span className="sm:hidden">
-                    Tap ‹ › to walk me. Tap a frame to open it.
-                  </span>
                 </p>
                 <button
                   onClick={() => setGreet(false)}
-                  className="mt-2.5 text-[10px] uppercase tracking-[0.22em] text-[#d8c39a] transition-colors hover:text-[#f6f1e7]"
+                  className="mt-2.5 text-[11px] uppercase tracking-[0.24em] text-[#d8c39a] transition-colors hover:text-[#f6f1e7]"
                 >
                   Let&apos;s walk →
                 </button>
