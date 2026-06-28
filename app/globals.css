@@ -29,6 +29,14 @@
   animation: scroll-travel 2s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
 
+/* ── footprints left while walking ── */
+@keyframes footfade {
+  0% { opacity: 0.4; transform: translateX(-50%) scale(0.85); }
+  20% { opacity: 0.4; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1); }
+}
+.footprint { animation: footfade 2.6s ease-out forwards; }
+
 /* ── walking-character animation (walkthrough gallery) ── */
 @keyframes legA {
   0%, 100% { transform: rotate(18deg); }

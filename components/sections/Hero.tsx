@@ -86,7 +86,6 @@ export default function Hero() {
 
           <ul className="flex flex-col gap-1.5">
             <li><a className="transition-colors hover:text-espresso" href="#gallery">Gallery</a></li>
-            <li><a className="transition-colors hover:text-espresso" href="#gallery">Work</a></li>
             <li><a className="transition-colors hover:text-espresso" href={profile.resumeUrl} target="_blank" rel="noreferrer">Resume</a></li>
           </ul>
 

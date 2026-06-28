@@ -49,9 +49,15 @@ export default function WalkGallery() {
   const charX = useRef(START); // start at first frame
   const dir = useRef(0); // -1 / 0 / 1
   const facing = useRef(1);
+  const camX = useRef(0); // smoothed camera position
+  const prevX = useRef(START);
+  const stride = useRef(0); // distance since last footprint
+  const side = useRef(1);
+  const printId = useRef(0);
 
   const [active, setActive] = useState<number | null>(0);
   const [open, setOpen] = useState<number | null>(null);
+  const [prints, setPrints] = useState<{ id: number; x: number; s: number }[]>([]);
 
   const openAt = useCallback((i: number | null) => setOpen(i), []);
 
@@ -95,16 +101,38 @@ export default function WalkGallery() {
       charX.current += dir.current * SPEED;
       charX.current = Math.max(40, Math.min(WORLD_W - 40, charX.current));
 
-      const camX = Math.max(0, Math.min(WORLD_W - vw, charX.current - vw / 2));
+      // smoothed (eased) camera follow
+      const target = Math.max(0, Math.min(WORLD_W - vw, charX.current - vw / 2));
+      camX.current += (target - camX.current) * 0.1;
 
       if (worldRef.current)
-        worldRef.current.style.transform = `translate3d(${-camX}px,0,0)`;
+        worldRef.current.style.transform = `translate3d(${-camX.current}px,0,0)`;
       if (charRef.current)
         charRef.current.style.transform = `translate3d(${charX.current}px,0,0)`;
       if (artRef.current)
         artRef.current.style.transform = `scaleX(${facing.current})`;
 
-      charRef.current?.classList.toggle("walking", dir.current !== 0);
+      const moving = dir.current !== 0;
+      charRef.current?.classList.toggle("walking", moving);
+
+      // drop footprints while walking
+      const delta = charX.current - prevX.current;
+      prevX.current = charX.current;
+      if (moving && delta !== 0) {
+        stride.current += Math.abs(delta);
+        if (stride.current >= 34) {
+          stride.current = 0;
+          side.current *= -1;
+          const id = ++printId.current;
+          const x = charX.current + side.current * 5 - facing.current * 8;
+          const s = side.current;
+          setPrints((p) => [...p.slice(-16), { id, x, s }]);
+          window.setTimeout(
+            () => setPrints((p) => p.filter((q) => q.id !== id)),
+            2600
+          );
+        }
+      }
 
       // nearest frame
       let best = 0;
@@ -205,8 +233,24 @@ export default function WalkGallery() {
           );
         })}
 
+        {/* ── footprints left while walking ── */}
+        {prints.map((p) => (
+          <span
+            key={p.id}
+            className="footprint pointer-events-none absolute z-[16]"
+            style={{ left: p.x, bottom: "calc(20% - 3px)" }}
+          >
+            <span
+              className="block h-[5px] w-[11px] rounded-[50%] bg-[#2a241d]"
+              style={{ transform: `rotate(${p.s > 0 ? 14 : -14}deg)` }}
+            />
+          </span>
+        ))}
+
         {/* ── the walking character ── */}
         <div ref={charRef} className="absolute z-30" style={{ left: 0, bottom: "20%" }}>
+          {/* contact shadow */}
+          <span className="pointer-events-none absolute bottom-[-3px] left-0 h-[7px] w-12 -translate-x-1/2 rounded-[50%] bg-[#2a241d]/20 blur-[4px]" />
           <div className="bob" style={{ marginLeft: -23 }}>
             <div
               ref={artRef}
@@ -231,6 +275,9 @@ export default function WalkGallery() {
           </div>
         </div>
       </div>
+
+      {/* ── soft museum vignette (focuses the eye centre) ── */}
+      <div className="pointer-events-none absolute inset-0 z-[34] bg-[radial-gradient(130%_120%_at_50%_42%,transparent_58%,rgba(42,36,29,0.13))]" />
 
       {/* ── fixed UI overlay ── */}
       <header className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-center justify-between px-8 pt-7 sm:px-12">
