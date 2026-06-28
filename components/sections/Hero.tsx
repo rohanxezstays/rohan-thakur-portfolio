@@ -76,12 +76,12 @@ export default function Hero() {
       className="relative h-screen w-full overflow-hidden bg-bone text-espresso"
     >
       {/* ── top nav ── */}
-      <nav className="absolute inset-x-0 top-0 z-30 flex items-start justify-between px-8 pt-8 sm:px-12 sm:pt-10">
-        <a href="#hero" className="font-serif text-xl tracking-tight sm:text-2xl">
+      <nav className="absolute inset-x-0 top-0 z-30 flex items-start justify-between px-5 pt-5 sm:px-12 sm:pt-10">
+        <a href="#hero" className="font-serif text-lg tracking-tight sm:text-2xl">
           Rohan
         </a>
 
-        <div className="flex items-start gap-8 text-xs tracking-tight text-espresso/70 sm:gap-14 sm:text-[13px]">
+        <div className="flex items-start gap-5 text-[11px] tracking-tight text-espresso/70 sm:gap-14 sm:text-[13px]">
           <span className="hidden sm:block">2026</span>
 
           <ul className="flex flex-col gap-1.5">
@@ -144,19 +144,19 @@ export default function Hero() {
         initial={{ opacity: 0, y: 44, scale: 0.97, x: "-50%" }}
         animate={{ opacity: 1, y: 0, scale: 1, x: "-50%" }}
         transition={{ duration: 1.2, ease: [0.2, 0.8, 0.2, 1] }}
-        className="absolute -bottom-[8vh] left-1/2 z-20 h-[112vh] max-w-none select-none object-contain object-bottom [filter:contrast(1.04)_saturate(1.04)_drop-shadow(0_40px_70px_rgba(42,36,29,0.28))]"
+        className="absolute -bottom-[3vh] left-1/2 z-20 h-[68vh] max-w-none select-none object-contain object-bottom [filter:contrast(1.04)_saturate(1.04)_drop-shadow(0_40px_70px_rgba(42,36,29,0.28))] sm:-bottom-[8vh] sm:h-[112vh]"
         draggable={false}
       />
 
-      {/* ── bottom-right tagline ── */}
-      <div className="absolute bottom-8 right-8 z-30 text-right text-[13px] leading-relaxed text-espresso/75 sm:bottom-10 sm:right-12 sm:text-sm">
+      {/* ── bottom-right tagline (desktop only) ── */}
+      <div className="absolute bottom-8 right-8 z-30 hidden text-right text-[13px] leading-relaxed text-espresso/75 sm:bottom-10 sm:right-12 sm:block sm:text-sm">
         <p>Building products that scale.</p>
         <p>Designing systems that last.</p>
         <p>Turning ideas into measurable impact.</p>
       </div>
 
       {/* ── bottom-left role tags ── */}
-      <div className="absolute bottom-8 left-8 z-30 text-[13px] leading-relaxed text-espresso/75 sm:bottom-10 sm:left-12 sm:text-sm">
+      <div className="absolute bottom-24 left-5 z-30 text-[11px] leading-relaxed text-espresso/75 sm:bottom-10 sm:left-12 sm:text-sm">
         <p>Founder&apos;s Office <b className="font-semibold text-olive">Executive</b></p>
         <p>AI <b className="font-semibold text-olive">Engineer</b></p>
         <p>Data <b className="font-semibold text-olive">Storyteller</b></p>
@@ -165,12 +165,12 @@ export default function Hero() {
       {/* ── scroll-down cue → enter the gallery ── */}
       <a
         href="#gallery"
-        className="group absolute bottom-7 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full bg-espresso px-6 py-3 text-bone shadow-[0_14px_34px_-10px_rgba(42,36,29,0.6)] ring-1 ring-espresso/10 transition-transform duration-300 hover:scale-[1.04]"
+        className="group absolute bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-espresso px-4 py-2.5 text-bone shadow-[0_14px_34px_-10px_rgba(42,36,29,0.6)] ring-1 ring-espresso/10 transition-transform duration-300 hover:scale-[1.04] sm:gap-3 sm:px-6 sm:py-3"
       >
-        <span className="text-[11px] font-medium uppercase tracking-[0.26em]">
+        <span className="whitespace-nowrap text-[9px] font-medium uppercase tracking-[0.18em] sm:text-[11px] sm:tracking-[0.26em]">
           Scroll to enter the Gallery
         </span>
-        <span className="grid h-6 w-6 animate-bounce place-items-center rounded-full bg-bone text-sm leading-none text-espresso">
+        <span className="grid h-5 w-5 animate-bounce place-items-center rounded-full bg-bone text-xs leading-none text-espresso sm:h-6 sm:w-6 sm:text-sm">
           ↓
         </span>
       </a>

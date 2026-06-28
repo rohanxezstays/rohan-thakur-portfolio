@@ -58,6 +58,7 @@ export default function WalkGallery() {
   const [active, setActive] = useState<number | null>(0);
   const [open, setOpen] = useState<number | null>(null);
   const [prints, setPrints] = useState<{ id: number; x: number; s: number }[]>([]);
+  const [greet, setGreet] = useState(true);
 
   const openAt = useCallback((i: number | null) => setOpen(i), []);
 
@@ -66,9 +67,11 @@ export default function WalkGallery() {
     const down = (e: KeyboardEvent) => {
       if (["ArrowLeft", "a", "A"].includes(e.key)) {
         dir.current = -1;
+        setGreet(false);
         e.preventDefault();
       } else if (["ArrowRight", "d", "D"].includes(e.key)) {
         dir.current = 1;
+        setGreet(false);
         e.preventDefault();
       } else if (["ArrowUp", "Enter", " "].includes(e.key)) {
         e.preventDefault();
@@ -156,7 +159,10 @@ export default function WalkGallery() {
     return () => cancelAnimationFrame(raf);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const press = (d: number) => () => (dir.current = d);
+  const press = (d: number) => () => {
+    dir.current = d;
+    setGreet(false);
+  };
   const release = () => (dir.current = 0);
 
   return (
@@ -251,6 +257,32 @@ export default function WalkGallery() {
         <div ref={charRef} className="absolute z-30" style={{ left: 0, bottom: "20%" }}>
           {/* contact shadow */}
           <span className="pointer-events-none absolute bottom-[-3px] left-0 h-[7px] w-12 -translate-x-1/2 rounded-[50%] bg-[#2a241d]/20 blur-[4px]" />
+
+          {/* greeting + guide bubble */}
+          {greet && (
+            <div className="absolute bottom-[116px] left-0 z-40 w-52 -translate-x-1/2 sm:w-64">
+              <div className="relative rounded-2xl bg-[#2a241d] px-4 py-3 text-center shadow-[0_18px_40px_-16px_rgba(28,24,19,0.7)]">
+                <p className="font-serif text-sm text-[#f6f1e7] sm:text-base">
+                  Welcome — I&apos;m your guide.
+                </p>
+                <p className="mt-1 text-[11px] leading-snug text-[#f6f1e7]/75">
+                  <span className="hidden sm:inline">
+                    Walk me with ← → (or A · D). Reach a frame and press ↑ to view it.
+                  </span>
+                  <span className="sm:hidden">
+                    Tap ‹ › to walk me. Tap a frame to open it.
+                  </span>
+                </p>
+                <button
+                  onClick={() => setGreet(false)}
+                  className="mt-2.5 text-[10px] uppercase tracking-[0.22em] text-[#d8c39a] transition-colors hover:text-[#f6f1e7]"
+                >
+                  Let&apos;s walk →
+                </button>
+                <span className="absolute -bottom-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 bg-[#2a241d]" />
+              </div>
+            </div>
+          )}
           <div className="bob" style={{ marginLeft: -23 }}>
             <div
               ref={artRef}
@@ -280,17 +312,18 @@ export default function WalkGallery() {
       <div className="pointer-events-none absolute inset-0 z-[34] bg-[radial-gradient(130%_120%_at_50%_42%,transparent_58%,rgba(42,36,29,0.13))]" />
 
       {/* ── fixed UI overlay ── */}
-      <header className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-center justify-between px-8 pt-7 sm:px-12">
-        <div className="pointer-events-auto flex gap-7 font-serif text-lg">
+      <header className="pointer-events-none absolute inset-x-0 top-0 z-40 flex items-center justify-between px-5 pt-5 sm:px-12 sm:pt-7">
+        <div className="pointer-events-auto flex gap-5 font-serif text-sm sm:gap-7 sm:text-lg">
           <a href="#hero" className="text-espresso/80 hover:text-espresso">Home</a>
           <span className="text-espresso">Gallery</span>
         </div>
-        <span className="font-serif text-xl">Rohan Thakur</span>
+        <span className="font-serif text-base sm:text-xl">Rohan Thakur</span>
       </header>
 
       {/* controls hint */}
-      <div className="pointer-events-none absolute bottom-6 left-1/2 z-40 -translate-x-1/2 text-center text-[11px] uppercase tracking-[0.25em] text-espresso/55">
-        ← / → or A · D to walk · ↑ to view an exhibit
+      <div className="pointer-events-none absolute bottom-6 left-1/2 z-40 w-full -translate-x-1/2 px-4 text-center text-[10px] uppercase tracking-[0.2em] text-espresso/55 sm:text-[11px] sm:tracking-[0.25em]">
+        <span className="hidden sm:inline">← / → or A · D to walk · ↑ to view an exhibit</span>
+        <span className="sm:hidden">Tap ‹ › to walk · tap a frame to view</span>
       </div>
 
       {/* touch arrows */}
