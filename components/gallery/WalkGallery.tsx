@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import FrameArt from "./FrameArt";
+import WallClock from "./WallClock";
 import {
   profile,
   socials,
@@ -41,6 +42,66 @@ function frameX(i: number) {
   return START + i * GAP;
 }
 
+/* small decorative motifs hung in the gaps between canvases */
+function MiniMotif({ n }: { n: number }) {
+  const s = {
+    fill: "none",
+    stroke: "#3a3128",
+    strokeWidth: 1.4,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+  };
+  const inner = () => {
+    switch (n) {
+      case 1: // crescent moon + star
+        return (
+          <>
+            <path d="M30 10 A14 14 0 1 0 30 38 A11 11 0 1 1 30 10 Z" fill="#d8c39a" stroke="#9c7d36" />
+            <path d="M14 14 l1.5 3 l3 .5 l-2.2 2 l.6 3 l-2.9 -1.5 l-2.9 1.5 l.6 -3 l-2.2 -2 l3 -.5 Z" fill="#bfa779" stroke="none" />
+          </>
+        );
+      case 2: // feather
+        return (
+          <g {...s}>
+            <path d="M30 8 C18 18 14 30 16 42" />
+            <path d="M30 8 C26 22 22 32 18 40" opacity="0.6" />
+            <path d="M27 14 l-7 4 M28 20 l-8 4 M27 27 l-8 4 M25 34 l-7 3" strokeWidth="1" />
+          </g>
+        );
+      case 3: // key
+        return (
+          <g {...s}>
+            <circle cx="20" cy="16" r="8" />
+            <circle cx="20" cy="16" r="3" />
+            <line x1="20" y1="24" x2="20" y2="44" />
+            <line x1="20" y1="38" x2="27" y2="38" />
+            <line x1="20" y1="44" x2="26" y2="44" />
+          </g>
+        );
+      case 4: // compass rose
+        return (
+          <>
+            <circle cx="25" cy="26" r="14" fill="none" stroke="#9c7d36" strokeWidth="1.2" />
+            <path d="M25 12 L29 26 L25 40 L21 26 Z" fill="#d8c39a" stroke="#9c7d36" strokeWidth="0.8" />
+            <path d="M11 26 L25 22 L39 26 L25 30 Z" fill="#bfa779" stroke="#9c7d36" strokeWidth="0.8" />
+          </>
+        );
+      default: // leaf
+        return (
+          <g {...s}>
+            <path d="M14 42 C14 24 24 12 36 10 C36 28 26 40 14 42 Z" fill="#c5cda0" stroke="#5e6e3c" />
+            <path d="M16 40 C22 30 30 20 34 14" stroke="#5e6e3c" />
+          </g>
+        );
+    }
+  };
+  return (
+    <svg viewBox="0 0 50 50" className="h-12 w-12">
+      {inner()}
+    </svg>
+  );
+}
+
 export default function WalkGallery() {
   const containerRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<HTMLDivElement>(null);
@@ -55,6 +116,7 @@ export default function WalkGallery() {
   const stride = useRef(0); // distance since last footprint
   const side = useRef(1);
   const printId = useRef(0);
+  const gotoIdx = useRef<number | null>(null); // tap-to-walk target frame
 
   const [active, setActive] = useState<number | null>(null);
   const [open, setOpen] = useState<number | null>(null);
@@ -68,10 +130,12 @@ export default function WalkGallery() {
     const down = (e: KeyboardEvent) => {
       if (["ArrowLeft", "a", "A"].includes(e.key)) {
         dir.current = -1;
+        gotoIdx.current = null;
         setGreet(false);
         e.preventDefault();
       } else if (["ArrowRight", "d", "D"].includes(e.key)) {
         dir.current = 1;
+        gotoIdx.current = null;
         setGreet(false);
         e.preventDefault();
       } else if (["ArrowUp", "Enter", " "].includes(e.key)) {
@@ -101,8 +165,23 @@ export default function WalkGallery() {
     const tick = () => {
       const vw = containerRef.current?.clientWidth ?? 1280;
 
-      if (dir.current !== 0) facing.current = dir.current;
-      charX.current += dir.current * SPEED;
+      // resolve movement direction: manual keys/arrows OR tap-to-walk target
+      let move = dir.current;
+      if (move === 0 && gotoIdx.current !== null) {
+        const gx = frameX(gotoIdx.current);
+        const d = gx - charX.current;
+        if (Math.abs(d) <= SPEED + 1) {
+          charX.current = gx;
+          const arrived = gotoIdx.current;
+          gotoIdx.current = null;
+          setOpen(arrived); // auto-open the exhibit on arrival
+        } else {
+          move = d > 0 ? 1 : -1;
+        }
+      }
+
+      if (move !== 0) facing.current = move;
+      charX.current += move * SPEED;
       charX.current = Math.max(40, Math.min(WORLD_W - 40, charX.current));
 
       // smoothed (eased) camera follow
@@ -116,8 +195,9 @@ export default function WalkGallery() {
       if (artRef.current)
         artRef.current.style.transform = `scaleX(${facing.current})`;
 
-      const moving = dir.current !== 0;
+      const moving = move !== 0;
       charRef.current?.classList.toggle("walking", moving);
+      charRef.current?.classList.toggle("idle", !moving);
 
       // drop footprints while walking
       const delta = charX.current - prevX.current;
@@ -162,14 +242,21 @@ export default function WalkGallery() {
 
   const press = (d: number) => () => {
     dir.current = d;
+    gotoIdx.current = null;
     setGreet(false);
   };
   const release = () => (dir.current = 0);
 
+  const walkTo = (i: number) => {
+    gotoIdx.current = i;
+    dir.current = 0;
+    setGreet(false);
+  };
+
   return (
     <div
       ref={containerRef}
-      className="relative h-full w-full overflow-hidden bg-[#e9e4d9] text-espresso"
+      className="relative h-full w-full overflow-hidden bg-[#d6cdb8] text-espresso"
     >
       {/* ── moving world ── */}
       <div
@@ -177,9 +264,66 @@ export default function WalkGallery() {
         className="absolute inset-y-0 left-0 will-change-transform"
         style={{ width: WORLD_W }}
       >
+        {/* wall depth gradient (deeper, warmer greige) */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#dcd2bd] via-[#d4cab3] to-[#cabfa6]" />
+        {/* dado rail (classic gallery wall moulding) */}
+        <div className="absolute inset-x-0 top-[62%] h-[3px] bg-[#2a241d]/12" />
+        <div className="absolute inset-x-0 top-[calc(62%+3px)] h-[10px] bg-gradient-to-b from-[#2a241d]/6 to-transparent" />
+        {/* crown line near ceiling */}
+        <div className="absolute inset-x-0 top-[6%] h-px bg-[#2a241d]/10" />
         {/* floor */}
-        <div className="absolute inset-x-0 bottom-0 h-[24%] bg-gradient-to-b from-[#e0d9c8] to-[#d6cdb8]" />
-        <div className="absolute inset-x-0 bottom-[24%] h-px bg-[#2a241d]/15" />
+        <div className="absolute inset-x-0 bottom-0 h-[24%] bg-gradient-to-b from-[#cdc4ac] to-[#bdb293]" />
+        <div className="absolute inset-x-0 bottom-[24%] h-px bg-[#2a241d]/20" />
+
+        {/* ── entrance title ── */}
+        <div
+          className="absolute z-[6] -translate-x-1/2 text-center"
+          style={{ left: ENTRY, top: "20%" }}
+        >
+          <p className="font-serif text-[13px] italic text-espresso/70">The Gallery of</p>
+          <p className="font-serif text-3xl leading-tight text-espresso">Rohan Thakur</p>
+          <p className="mt-1.5 text-[9px] uppercase tracking-[0.4em] text-[#6b6b45]">Est. 2026</p>
+          <p className="mt-4 text-[10px] uppercase tracking-[0.3em] text-espresso/45">A walk-through exhibition</p>
+        </div>
+
+        {/* ── decor in the gaps between canvases ── */}
+        {Array.from({ length: EXHIBITS.length - 1 }).map((_, i) => {
+          const gx = frameX(i) + GAP / 2;
+          if (i === 0) {
+            // live clock between Canvas I and II
+            return (
+              <div
+                key="clock"
+                className="absolute z-[6] -translate-x-1/2 text-center"
+                style={{ left: gx, top: "20%" }}
+              >
+                <div className="mx-auto h-3 w-[3px] bg-[#2a241d]" />
+                <div className="mx-auto h-24 w-24 drop-shadow-[0_14px_24px_rgba(28,24,19,0.35)]">
+                  <WallClock />
+                </div>
+                <p className="mt-3 text-[9px] uppercase tracking-[0.32em] text-espresso/45">
+                  Now showing
+                </p>
+              </div>
+            );
+          }
+          return (
+            <div
+              key={`gap-${i}`}
+              className="absolute z-[5] -translate-x-1/2"
+              style={{ left: gx, top: "34%" }}
+            >
+              <div className="mx-auto h-3 w-px bg-[#2a241d]/40" />
+              <div className="bg-[#1b1712] p-1.5 shadow-[0_16px_30px_-20px_rgba(28,24,19,0.6)]">
+                <div className="ring-1 ring-[#caa75f]/30">
+                  <div className="flex h-16 w-14 items-center justify-center bg-gradient-to-br from-[#efe7d4] to-[#ddd1b6]">
+                    <MiniMotif n={i} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
 
         {/* frames + spotlights */}
         {EXHIBITS.map((ex, i) => {
@@ -187,21 +331,62 @@ export default function WalkGallery() {
           const isActive = active === i;
           return (
             <div key={ex.id}>
-              {/* floor spotlight */}
+              {/* warm wall glow */}
               <div
-                className="absolute bottom-[20%] z-0 h-10 w-56 -translate-x-1/2 rounded-[50%] bg-white/55 blur-xl transition-opacity duration-300"
-                style={{ left: x, opacity: isActive ? 0.9 : 0.5 }}
+                className="absolute top-[10%] z-0 h-80 w-80 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,243,214,0.75),transparent_62%)] transition-opacity duration-500"
+                style={{ left: x, opacity: isActive ? 1 : 0.4 }}
               />
-              {/* wall glow */}
+              {/* floor light pool */}
               <div
-                className="absolute top-[12%] z-0 h-72 w-72 -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.6),transparent_65%)] transition-opacity duration-300"
-                style={{ left: x, opacity: isActive ? 1 : 0.35 }}
+                className="absolute bottom-[18%] z-0 h-12 w-64 -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse,rgba(255,239,205,0.85),transparent_70%)] blur-md transition-opacity duration-500"
+                style={{ left: x, opacity: isActive ? 0.95 : 0.45 }}
               />
+
+              {/* tappable hotspot ring on the floor */}
+              <button
+                aria-label={`Walk to ${ex.title}`}
+                onClick={() => walkTo(i)}
+                className="absolute bottom-[13%] z-[12] -translate-x-1/2 cursor-pointer"
+                style={{ left: x }}
+              >
+                <span
+                  className="hotspot-ring block h-9 w-28 rounded-[50%] border-2"
+                  style={{
+                    borderColor: isActive ? "#bfa779" : "rgba(42,36,29,0.3)",
+                    background: isActive
+                      ? "radial-gradient(ellipse,rgba(191,167,121,0.3),transparent 70%)"
+                      : "transparent",
+                  }}
+                />
+                <span
+                  className="mt-1 block text-center text-[9px] uppercase tracking-[0.2em] transition-opacity"
+                  style={{ color: "#6b6b45", opacity: isActive ? 0 : 0.55 }}
+                >
+                  Stand
+                </span>
+              </button>
+
+              {/* picture light (brass museum lamp above the frame) */}
+              <div
+                className="absolute z-[11] -translate-x-1/2"
+                style={{ left: x, top: `calc(16% + ${Y_OFFSET[i]}px - 20px)` }}
+              >
+                <div className="mx-auto h-4 w-[3px] bg-[#2a241d]" />
+                <div className="mx-auto h-2 w-12 rounded-b-[7px] bg-gradient-to-b from-[#d6b057] to-[#9c7d36]" />
+                <div
+                  className="absolute left-1/2 top-[22px] -z-10 h-28 w-24 -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,rgba(255,235,186,0.85),transparent_70%)] transition-opacity duration-500"
+                  style={{ opacity: isActive ? 0.95 : 0.4 }}
+                />
+              </div>
 
               {/* the framed artwork */}
               <button
                 onClick={() => openAt(i)}
-                className="group absolute z-10 -translate-x-1/2 cursor-pointer bg-[#1b1712] p-2.5 shadow-[0_30px_55px_-28px_rgba(28,24,19,0.6)] transition-transform duration-500 hover:-translate-y-2"
+                className={`group absolute z-10 -translate-x-1/2 cursor-pointer bg-[#1b1712] p-2.5 transition-all duration-500 hover:-translate-y-2 ${
+                  isActive
+                    ? "-translate-y-1.5 shadow-[0_45px_70px_-30px_rgba(28,24,19,0.75)] ring-2 ring-[#c9a24b]/50"
+                    : "shadow-[0_30px_55px_-28px_rgba(28,24,19,0.6)]"
+                }`}
                 style={{ left: x, top: `calc(16% + ${Y_OFFSET[i]}px)` }}
               >
                 <div className="ring-1 ring-[#caa75f]/30">
@@ -239,6 +424,22 @@ export default function WalkGallery() {
             </div>
           );
         })}
+
+        {/* ── farewell sign at the end of the gallery ── */}
+        <div
+          className="absolute z-[6] -translate-x-1/2 text-center"
+          style={{ left: frameX(EXHIBITS.length - 1) + 360, top: "30%" }}
+        >
+          <p className="font-serif text-2xl italic leading-snug text-espresso sm:text-3xl">
+            Thank you for
+            <br />
+            visiting.
+          </p>
+          <p className="mt-4 text-[10px] uppercase tracking-[0.35em] text-[#6b6b45]">
+            Please come again
+          </p>
+          <span className="mx-auto mt-4 block h-px w-16 bg-[#2a241d]/25" />
+        </div>
 
         {/* ── footprints left while walking ── */}
         {prints.map((p) => (
@@ -293,12 +494,33 @@ export default function WalkGallery() {
               {/* shirt + tie */}
               <div className="absolute bottom-9 left-1/2 h-12 w-2 -translate-x-1/2 bg-[#ece7dc]" />
               <div className="absolute bottom-[38px] left-1/2 h-5 w-1 -translate-x-1/2 bg-[#7a2b2b]" />
-              {/* head + hair */}
-              <div className="absolute bottom-[60px] left-1/2 h-7 w-7 -translate-x-1/2 rounded-full bg-[#c89d77]" />
-              <div className="absolute bottom-[72px] left-1/2 h-3.5 w-[30px] -translate-x-1/2 rounded-t-full bg-[#241c16]" />
+              {/* hair mass (full, behind) */}
+              <div className="absolute bottom-[57px] left-1/2 h-8 w-8 -translate-x-1/2 rounded-full bg-[#221a12]" />
+              {/* face (skin, sits lower so hair frames the top + sides) */}
+              <div className="absolute bottom-[55px] left-1/2 h-[26px] w-[26px] -translate-x-1/2 rounded-full bg-[#c89d77]" />
+              {/* hair fringe sweep over the forehead */}
+              <div className="absolute bottom-[74px] left-1/2 h-2.5 w-[26px] -translate-x-1/2 rounded-t-full bg-[#1b140d]" />
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── drifting dust motes (ambience) ── */}
+      <div className="pointer-events-none absolute inset-0 z-[33] overflow-hidden">
+        {[
+          { l: "14%", t: "30%", d: 9, delay: 0 },
+          { l: "28%", t: "62%", d: 12, delay: 2 },
+          { l: "47%", t: "22%", d: 10, delay: 4 },
+          { l: "63%", t: "55%", d: 13, delay: 1 },
+          { l: "78%", t: "34%", d: 11, delay: 3 },
+          { l: "88%", t: "60%", d: 9, delay: 5 },
+        ].map((m, i) => (
+          <span
+            key={i}
+            className="mote absolute h-1 w-1 rounded-full bg-[#bfa779]"
+            style={{ left: m.l, top: m.t, animationDuration: `${m.d}s`, animationDelay: `${m.delay}s` }}
+          />
+        ))}
       </div>
 
       {/* ── soft museum vignette (focuses the eye centre) ── */}
@@ -313,19 +535,33 @@ export default function WalkGallery() {
         <span className="font-serif text-base sm:text-xl">Rohan Thakur</span>
       </header>
 
-      {/* controls hint */}
-      <div className="pointer-events-none absolute bottom-6 left-1/2 z-40 w-full -translate-x-1/2 px-4 text-center text-[10px] uppercase tracking-[0.2em] text-espresso/55 sm:text-[11px] sm:tracking-[0.25em]">
-        <span className="hidden sm:inline">← / → or A · D to walk · ↑ to view an exhibit</span>
-        <span className="sm:hidden">Tap ‹ › to walk · tap a frame to view</span>
+      {/* progress dots + hint */}
+      <div className="pointer-events-none absolute bottom-7 left-1/2 z-40 flex w-full -translate-x-1/2 flex-col items-center gap-2 px-4">
+        <div className="flex items-center gap-1.5">
+          {EXHIBITS.map((ex, i) => (
+            <span
+              key={ex.id}
+              className="h-1.5 rounded-full transition-all duration-300"
+              style={{
+                width: active === i ? 18 : 6,
+                background: active === i ? "#bfa779" : "rgba(42,36,29,0.25)",
+              }}
+            />
+          ))}
+        </div>
+        <p className="text-center text-[10px] uppercase tracking-[0.2em] text-espresso/55 sm:tracking-[0.25em]">
+          <span className="hidden sm:inline">Walk with ← → · tap a circle to go · ↑ to view</span>
+          <span className="sm:hidden">Tap a circle to walk there · tap a frame to view</span>
+        </p>
       </div>
 
-      {/* touch arrows */}
+      {/* touch / tap arrows (all sizes) */}
       <button
         aria-label="Walk left"
         onPointerDown={press(-1)}
         onPointerUp={release}
         onPointerLeave={release}
-        className="absolute bottom-16 left-5 z-40 grid h-14 w-14 place-items-center rounded-full border border-espresso/25 bg-bone/70 text-2xl text-espresso backdrop-blur sm:hidden"
+        className="absolute bottom-20 left-4 z-40 grid h-16 w-16 select-none place-items-center rounded-full bg-[#2a241d] text-3xl text-bone shadow-[0_10px_28px_-8px_rgba(28,24,19,0.6)] ring-1 ring-[#bfa779]/30 transition-transform active:scale-90 sm:bottom-24 sm:h-14 sm:w-14 sm:text-2xl"
       >
         ‹
       </button>
@@ -334,7 +570,7 @@ export default function WalkGallery() {
         onPointerDown={press(1)}
         onPointerUp={release}
         onPointerLeave={release}
-        className="absolute bottom-16 right-5 z-40 grid h-14 w-14 place-items-center rounded-full border border-espresso/25 bg-bone/70 text-2xl text-espresso backdrop-blur sm:hidden"
+        className="absolute bottom-20 right-4 z-40 grid h-16 w-16 select-none place-items-center rounded-full bg-[#2a241d] text-3xl text-bone shadow-[0_10px_28px_-8px_rgba(28,24,19,0.6)] ring-1 ring-[#bfa779]/30 transition-transform active:scale-90 sm:bottom-24 sm:h-14 sm:w-14 sm:text-2xl"
       >
         ›
       </button>

@@ -29,6 +29,29 @@
   animation: scroll-travel 2s cubic-bezier(0.45, 0, 0.2, 1) infinite;
 }
 
+/* ── floor hotspot pulse ── */
+@keyframes hotspotPulse {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.12); opacity: 0.85; }
+}
+.hotspot-ring { animation: hotspotPulse 2.6s ease-in-out infinite; }
+
+/* ── idle breathing sway when the guide is standing still ── */
+@keyframes idleSway {
+  0%, 100% { transform: rotate(-1.4deg); }
+  50% { transform: rotate(1.4deg); }
+}
+.idle .bob { animation: idleSway 3.6s ease-in-out infinite; transform-origin: bottom center; }
+
+/* ── drifting dust motes (ambience) ── */
+@keyframes moteFloat {
+  0% { transform: translateY(0) translateX(0); opacity: 0; }
+  10% { opacity: 0.5; }
+  90% { opacity: 0.4; }
+  100% { transform: translateY(-60px) translateX(14px); opacity: 0; }
+}
+.mote { animation: moteFloat linear infinite; }
+
 /* ── footprints left while walking ── */
 @keyframes footfade {
   0% { opacity: 0.4; transform: translateX(-50%) scale(0.85); }
